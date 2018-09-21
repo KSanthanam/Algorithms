@@ -35,6 +35,8 @@ The solution implemented is the most efficient possible in Golang using back pro
 
 #### Synopsis of Algorithm
 
-The Algorithm generates N*N anchor points (r_i,c_j) where i = 1..N and j = 1..N. 
+The Algorithm generates N*N anchor points 
+$$\(r_i,c_j) 
+where i = 1..N and j = 1..N. 
 
 [Markdown Syntax](https://stackedit.io/app#)
