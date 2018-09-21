@@ -1,6 +1,6 @@
 # Algorithms 
 ## NQueens
-Given a Chessboard of size N> find possible Solutions where N queens are placed on the board
+Given a Chessboard of size N find possible Solutions where N queens are placed on the board
 
 ### Time complexity
 The **Time Complexity** by Brute force logic is N<sup>N</sup> as one needs to place the queen in (a,b) and check N*N-1 places to validate.
