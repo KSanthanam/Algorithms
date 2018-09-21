@@ -47,21 +47,43 @@ so when the the last row Nth row anchor is received and the row can be reached, 
 
 So the logic is as follows:
 anchor go routine for (R<sub>i</sub>,C<sub>j</sub>)
+Each anchor is submitted to a go routine. So there are approximately N<sup>4</sup> number of go routines. Most of these go routines will exit very quick if the predecessor anchor for the same column reached there before and done the work. 
+so if the anchor for R<sub>i+m</sub> has reached before R<sub>i</sub> then the corresponding go routine exits straight away. if anchor for R<sub>n</sub> reaches before any of the other anchors for the same column then all subsequent anchors for the said column will exit immediately.
+
+By implementing the go routines an efficiency of 3000X was achieved.
+
 <pre>
-if the i == 0 insert the anchor into the piece stack for j.
+Anchor is (R<sub>i</sub>,C<sub>j</sub>) 
 
-else
+if Col<sub>j</sub> already processed then
+   exit
+end
+if R<sub>1</sub> then 
+  place Queen in (R<sub>1</sub>,C<sub>j</sub>) 
+  set (R<sub>0</sub>,C<sub></sub>) visited to True
+end
 
-r = i + 1
-colStart = 0
-for r <= i do
-c = colStart
+if Stack is empty then
+   place Queen in (R<sub>0</sub>,C<sub>j</sub>) 
+end
+
+lastQueen = lastPiece in Stack 
+lastQueen is Queen(R<sub>si</sub>,C<sub>sj</sub>)
+
+r = lastQueen Row + 1
+colStart = 1
+rowStop = i
+
+for r <= rStop do
+   c = colStart
    placed = false
    for c < N do
        if (r,c) has not been visited then
          visited[(r,c)] = true
-         if can Queen be placed in (r,c) then
-             placed = true
+         placed = Queen can be placed in (r,c) 
+         if placed then
+          push Queen(R<sub>i</sub>,C<sub>j</sub>)
+          break
          end
        end
        c++
@@ -70,24 +92,31 @@ c = colStart
       r++
       cStart = 0
    else
-      if r <= i
-        pop last cell in Piece Stack
-        r = last cell row
-        c = last cell col + 1
+      if r <= rStop
+        if Stack Size == 1 then
+          break
+        else
+          pop last cell in Piece Stack
+          r = popped piece row
+          c = popped cell col + 1
+        end
       else
         break
       end
    end
-   if r < j then
-     for r is r to j do
+   if r < rowStop then
+     c = j
+     for r is r to rowStop do
        for c is 0 to N do
           visited[(r,c)] = true
        done
      done
    end
-   if r == N-1 then
-      send the cells in PieceStack to Solutions 
+   if r == N then
+      send the cells in PieceStack to Solutions List
+      processed[Column] = true
    end
+   
 done
 </pre>
 
