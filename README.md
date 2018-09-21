@@ -91,5 +91,8 @@ c = colStart
 done
 </pre>
 
+### Summary
+The Algorithm implemented here runs N*N go routines and traverses the stack for its column. To keep the integrity of the PieceStack the stack for the particular column is processed by a single anchor at a time. The go routine for other anchors for this column waits for the given anchor to traverse and backtrack (if needed) to the row of the given anchor.
+
 
 [Markdown Syntax](https://stackedit.io/app#)
