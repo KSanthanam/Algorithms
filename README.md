@@ -1,9 +1,9 @@
 # Algorithms 
 ## NQueens
-Given a Chessboard of size N find possible Solutions where N queens are placed on the board
+Given a Chessboard of size N> find possible Solutions where N queens are placed on the board
 
 ### Time complexity
-The **Time Complexity** by Brute force logic is N^N as one needs to place the queen in (a,b) and check N-1 places to validate.
+The **Time Complexity** by Brute force logic is N<sup>N</sup> as one needs to place the queen in (a,b) and check N*N-1 places to validate.
 
 N Queen Algorithm
 
@@ -29,7 +29,7 @@ All possible solutions are
  | 3 |   | Q |   |   |
 
 ### Solutions
-There are few solutions with inefficient timecomplexity. The worst being Q(N^N)
+There are few solutions with inefficient timecomplexity. The worst being Q(N<sup>N</sup>)
 
 The solution implemented is the most efficient possible in Golang using back propagation, channel and go routines.
 
