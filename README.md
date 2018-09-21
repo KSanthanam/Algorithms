@@ -36,21 +36,18 @@ The solution implemented is the most efficient possible in Golang using back pro
 #### Synopsis of Algorithm
 
 The Algorithm generates N*N anchor points and submits to the anchor channel.
-
-$$
-i = 1..N, j =1..N
-(\R_i,C_j)
-$$
+R<sub>i</sub>,C<sub>j</sub>
+where <sub>i</sub> is 1..N, <sub>j</sub> is 1..N
 
 Each anchor is read from the channel and submited to go routine that  traverses the board using the PieceStack dedicated for the column of the given anchor.
 
 The Traverse Logic for a given anchor.
-when a anchor  $$ (\R_i,C_j) $$ is receied, a go routine is kick started with the aim to place Queens up to the row i. If the row i can be reached with placements it back tracks by forwarding the column position. If it exhausts all columns for rows before i, the go routine stops trying. 
+when a anchor (R<sub>i</sub>,C<sub>j</sub>) is receied, a go routine is kick started with the aim to place Queens up to the row i. If the row i can be reached with placements it back tracks by forwarding the column position. If it exhausts all columns for rows before i, the go routine stops trying. 
 so when the the last row Nth row anchor is received and the row can be reached, it is considered to be a solution as there will be N queens in place.
 
 So the logic is as follows:
+anchor go routine for (R<sub>i</sub>,C<sub>j</sub>)
 <pre>
-anchor go routine for $$ (\R_i,C_j) $$
 if the i == 0 insert the anchor into the piece stack for j.
 
 else
