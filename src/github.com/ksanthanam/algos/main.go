@@ -2,20 +2,23 @@ package main
 
 import (
 	"flag"
-	"strconv"
+	"fmt"
 
 	nqueens "github.com/ksanthanam/nqueens"
 )
 
-var (
-	size uint = 10
-)
+// var (
+// 	size uint = 4
+// )
 
 func main() {
+	debugPtr := flag.Bool("debug", false, "Debug true/false")
+	sizePtr := flag.Int("size", 10, "Debug true/false")
+	levelPtr := flag.Int("level", 1, "Debug with lower levels")
 	flag.Parse()
-	sizeStr := flag.Arg(0)
-	if sizeInt, err := strconv.Atoi(sizeStr); err == nil {
-		size = uint(sizeInt)
-	}
+	nqueens.DEBUG = *debugPtr
+	nqueens.LEVEL = *levelPtr
+	size := uint(*sizePtr)
+	fmt.Println(fmt.Sprintf("Running N Queen solution for size(%d) with DEBUG is %t and LEVEL is %d ", size, *debugPtr, *levelPtr))
 	nqueens.NQueenSolutions(size)
 }

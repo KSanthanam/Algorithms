@@ -102,6 +102,30 @@ func (ps *PieceStack) processAnchor(anchor Cell, size int, solutions chan Positi
 			wg.Done()
 		}()
 		ps.lock.Lock()
+
+		// var popStacks func(startRow, startCol int) (bool, int, int)
+		// popStacks = func(startRow, startCol int) (bool, int, int) {
+		// 	r := startRow
+		// 	c := startCol
+		// 	stackSize := len(ps.pieces)
+		// 	popped := false
+
+		// 	for stackSize > 2 && !popped {
+		// 		poppedPiece := ps.pieces[stackSize-1]
+		// 		d(1, s("%s: Popping %s", anchor, poppedPiece))
+		// 		ps.pieces = ps.pieces[:stackSize-1]
+		// 		stackSize--
+		// 		position := poppedPiece.GetPosition()
+		// 		r = position.Row
+		// 		c = (position.Col + 1) % size
+		// 		for clear := c; clear < size; clear++ {
+		// 			ps.visited[Cell{r, clear}] = false
+		// 		}
+		// 		popped = c != 0
+		// 	}
+		// 	return popped, r, c
+		// }
+		d(1, s("%s: Entering with stack %s", anchor, ps.pieces))
 		stackSize := len(ps.pieces)
 		if ps.processed {
 			return
@@ -135,12 +159,13 @@ func (ps *PieceStack) processAnchor(anchor Cell, size int, solutions chan Positi
 			for c < size {
 				newPosition := Cell{r, c}
 				if visited, ok := ps.visited[newPosition]; ok || !visited {
+					d(1, s("%s: Trying %s", anchor, newPosition))
 					newQueen := NewQueen(newPosition)
 					placed = canPieceBePlaced(ps.pieces, newQueen)
 					ps.visited[newPosition] = true
 					if placed {
-						d(1, s("%s: Placed %s", anchor, newQueen))
 						ps.pieces = append(ps.pieces, newQueen)
+						d(1, s("%s: Placed %s and now %s", anchor, newQueen, ps.pieces))
 						break
 					}
 				}
@@ -180,7 +205,7 @@ func (ps *PieceStack) processAnchor(anchor Cell, size int, solutions chan Positi
 			}
 		}
 		if anchor.RowIs(size - 1) {
-			// d(0, s("%s: Solution for column %d and took %s resulting %s", anchor, anchor.Col, time.Since(st), ps.pieces))
+			d(0, s("%s: Solution for column %d and took %s resulting %s", anchor, anchor.Col, time.Since(st), ps.pieces))
 			cells := make([]Cell, 0)
 			for _, piece := range ps.pieces {
 				cells = append(cells, piece.GetPosition())
@@ -366,15 +391,6 @@ func (q *QueenBoard) String() string {
 	return fmt.Sprintf("Board %dx%d Placed(%v) Solutions(%v)", q.size, q.size, q.processed, q.solutions)
 }
 
-// traverseWith
-func (q *QueenBoard) traverseWith(anchors <-chan Cell, solutions chan<- Positions) {
-	// for anchor := range anchors {
-	// 	solutions <- Positions([]Cell{Cell{anchor.row, anchor.col}})
-	// }
-	anchor := <-anchors
-	solutions <- Positions([]Cell{Cell{anchor.Row, anchor.Col}})
-}
-
 func (q *QueenBoard) startAnchorQueue(anchors chan<- Cell, done <-chan bool, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
@@ -421,6 +437,25 @@ func (q *QueenBoard) PlaceNQueens() []Positions {
 	anchors := make(chan Cell, noOfAnchors)
 	solutions := make(chan Positions, q.Size())
 	solns := make([]Positions, 0)
+	nth := func(n int) string {
+		m := n % 10
+		sfx := ""
+		if n >= 11 && n <= 13 {
+			sfx = "th"
+		} else {
+			switch m {
+			case 1:
+				sfx = "st"
+			case 2:
+				sfx = "nd"
+			case 3:
+				sfx = "rd"
+			default:
+				sfx = "th"
+			}
+		}
+		return fmt.Sprintf("%d%s", n, sfx)
+	}
 
 	defer func() {
 		d(0, s("Processed %d solutions with %d anchors and they took %s", processed, noOfAnchors, time.Since(st)))
@@ -442,6 +477,7 @@ func (q *QueenBoard) PlaceNQueens() []Positions {
 					solns = append(solns, positions)
 					d(0, s("%d: processed for col(%d) \nprocessed(%d/%d) %v \nsolution(%d/%d)  %v",
 						processed, col, len(q.processed), q.Size(), q.processed, len(q.solutions), q.Size(), q.solutions))
+					fmt.Printf(s("   %s: processed for col(%d)      \r", nth(processed), col))
 				}
 				if processed == q.Size() {
 					done <- true
