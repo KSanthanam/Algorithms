@@ -51,74 +51,44 @@ anchor go routine for (R<sub>i</sub>,C<sub>j</sub>)
 Each anchor is submitted to a go routine. So there are approximately N<sup>4</sup> number of go routines. Most of these go routines will exit very quick if the predecessor anchor for the same column reached there before and done the work. 
 so if an anchor for R<sub>i+m</sub> has reached before R<sub>i</sub> then the corresponding go routine exits straight away. if anchor for R<sub>n</sub> reaches before any of the other anchors for the same column then all subsequent anchors for the said column will exit immediately.
 
-By implementing the go routines, an efficiency of 3000X was achieved.
+By implementing the go routines, an efficiency of 5000X was achieved.
 
 <pre>
-Anchor is (R<sub>i</sub>,C<sub>j</sub>) 
+Anchor is Anchor(R<sub>i</sub>,C<sub>j</sub>) 
 
-if Col<sub>j</sub> already processed then
-   exit
-end
-if R<sub>1</sub> then 
-  place Queen in (R<sub>1</sub>,C<sub>j</sub>) 
-  set (R<sub>0</sub>,C<sub></sub>) visited to True
-end
+if PieceStack for Anchor.Col not processed then
 
-if Stack is empty then
-   place Queen in (R<sub>0</sub>,C<sub>j</sub>) 
-end
+  lastPiece = Last Piece in PieceStack
+  nextPiece = NextPiece(lastPiece.Row + 1, 0)
 
-lastQueen = lastPiece in Stack 
-lastQueen is Queen(R<sub>si</sub>,C<sub>sj</sub>)
-
-r = lastQueen Row + 1
-colStart = 1
-rowStop = i
-
-for r <= rStop do
-   c = colStart
-   placed = false
-   for c < N do
-       if (r,c) has not been visited then
-         visited[(r,c)] = true
-         placed = Queen can be placed in (r,c) 
-         if placed then
-          push Queen(R<sub>i</sub>,C<sub>j</sub>)
+  for nextPiece.Row <= Anchor.Row && 
+      Anchor.Row not already traversed do
+      c is nextPiece.Col
+      placed = false
+      for c < size do
+        if Position nextPiece.Row,c is not in path then 
+          place Queen at nextPiece.Row,c
           break
-         end
-       end
-       c++
-   done
-   if placed then
-      r++
-      cStart = 0
-   else
-      if r <= rStop
-        if Stack Size == 1 then
-          break
-        else
-          pop last cell in Piece Stack
-          r = popped piece row
-          c = popped cell col + 1
         end
-      else
-        break
+        c++
+      done
+      if placed then
+        nextPiece = nextPiece.Row + 1, 0
+      else 
+        pop a piece from PieceStack (up to 1 piece at Row 0)
+        if piece not popped then
+          break
+        end
+        nextPiece = poppedPiece.Row, poppedPiece.Col + 1
       end
-   end
-   if r < rowStop then
-     c = j
-     for r is r to rowStop do
-       for c is 0 to N do
-          visited[(r,c)] = true
-       done
-     done
-   end
-   if r == N then
-      send the cells in PieceStack to Solutions List
-      processed[Column] = true
-   end
+  done
+  Anchor.Row reached if nextPiece.Row >= Anchor.Row else false
 
-done
+  if Anchor.Row == N OR Anchor.Row not reached then
+    send Pieces in PieceStack as Solution if length of PieceStack == size
+    Set Anchor.Col Processed to true
+  end
+end
 </pre>
 
 ### Summary

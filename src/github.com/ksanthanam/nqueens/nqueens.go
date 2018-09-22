@@ -9,8 +9,9 @@ import (
 )
 
 var (
-	p = fmt.Println
-	s = fmt.Sprintf
+	p  = fmt.Println
+	pf = fmt.Printf
+	s  = fmt.Sprintf
 )
 
 var (
@@ -21,6 +22,11 @@ var (
 	d     = func(level int, str string) {
 		if DEBUG && level <= LEVEL {
 			p(str)
+		}
+	}
+	df = func(level int, str string) {
+		if DEBUG && level <= LEVEL {
+			pf(str)
 		}
 	}
 )
@@ -94,7 +100,6 @@ func (ps *PieceStack) canPlaceQueenAmonstQueens(anchor Cell) piececanbeplaced {
 }
 
 func (ps *PieceStack) processAnchor(anchor Cell, size int, solutions chan Positions, canPieceBePlaced piececanbeplaced, wg *sync.WaitGroup) {
-
 	wg.Add(1)
 	go func() {
 		defer func() {
@@ -102,119 +107,105 @@ func (ps *PieceStack) processAnchor(anchor Cell, size int, solutions chan Positi
 			wg.Done()
 		}()
 		ps.lock.Lock()
-
-		// var popStacks func(startRow, startCol int) (bool, int, int)
-		// popStacks = func(startRow, startCol int) (bool, int, int) {
-		// 	r := startRow
-		// 	c := startCol
-		// 	stackSize := len(ps.pieces)
-		// 	popped := false
-
-		// 	for stackSize > 2 && !popped {
-		// 		poppedPiece := ps.pieces[stackSize-1]
-		// 		d(1, s("%s: Popping %s", anchor, poppedPiece))
-		// 		ps.pieces = ps.pieces[:stackSize-1]
-		// 		stackSize--
-		// 		position := poppedPiece.GetPosition()
-		// 		r = position.Row
-		// 		c = (position.Col + 1) % size
-		// 		for clear := c; clear < size; clear++ {
-		// 			ps.visited[Cell{r, clear}] = false
-		// 		}
-		// 		popped = c != 0
-		// 	}
-		// 	return popped, r, c
-		// }
-		d(1, s("%s: Entering with stack %s", anchor, ps.pieces))
-		stackSize := len(ps.pieces)
-		if ps.processed {
-			return
-		}
-		if anchor.AtFirstRow() && stackSize == 0 {
-			if stackSize == 0 {
-				ps.pieces = append(ps.pieces, NewQueen(anchor))
-				ps.visited[anchor] = true
-			}
-			return
-		}
-		r := 0
-		cStart := 0
-
-		if stackSize == 0 {
-			firstQueen := NewQueen(Cell{0, anchor.Col})
-			ps.pieces = append(ps.pieces, firstQueen)
-			ps.visited[Cell{0, anchor.Col}] = true
-			r = 1
-			stackSize = len(ps.pieces)
-			d(1, s("%s: Inserted first %s", anchor, firstQueen))
-		}
-		lastPiece := ps.pieces[stackSize-1]
-		lastQueen := lastPiece.GetPosition()
-		r = lastQueen.Row + 1
-		rStop := anchor.Row
 		st := time.Now()
-		for r <= rStop {
-			c := cStart
-			placed := false
-			for c < size {
-				newPosition := Cell{r, c}
-				if visited, ok := ps.visited[newPosition]; ok || !visited {
-					d(1, s("%s: Trying %s", anchor, newPosition))
-					newQueen := NewQueen(newPosition)
-					placed = canPieceBePlaced(ps.pieces, newQueen)
-					ps.visited[newPosition] = true
-					if placed {
-						ps.pieces = append(ps.pieces, newQueen)
-						d(1, s("%s: Placed %s and now %s", anchor, newQueen, ps.pieces))
-						break
-					}
-				}
-				c++
+		lastQueen := func() (bool, Cell) {
+			stackSize := len(ps.pieces)
+			if stackSize > 0 {
+				lastQueen := ps.pieces[stackSize-1]
+				lastPosition := lastQueen.GetPosition()
+				return true, lastPosition
 			}
+			return false, Cell{}
+		}
+
+		placeQueen := func(row, col int) bool {
+			tryPosition := Cell{row, col}
+			tryQueen := NewQueen(tryPosition)
+			placed := canPieceBePlaced(ps.pieces, tryQueen)
+			df(2, s("     %s: Trying position %s          \r", anchor, Cell{row, col}))
 			if placed {
-				r++
-				cStart = 0
-			} else {
-				if len(ps.pieces) > 0 && r <= rStop {
-					stackSize := len(ps.pieces)
-					if stackSize == 1 {
-						d(1, s("%s: Reached top of the column(%d)", anchor, anchor.Col))
-						break
-					} else {
-						popped := ps.pieces[stackSize-1]
-						d(1, s("%s: Popping %s", anchor, popped))
-						ps.pieces = ps.pieces[:stackSize-1]
-						position := popped.GetPosition()
-						r = position.Row
-						cStart = position.Col + 1
-					}
-				} else {
-					d(1, s("%s: Nothing to pop", anchor))
-					break
+				ps.pieces = append(ps.pieces, tryQueen)
+				df(2, s("     %s: Placed %s                \r", anchor, tryQueen))
+			}
+			ps.visited[tryPosition] = true
+			return placed
+		}
+		popAQueen := func() (Piece, bool) {
+			stackSize := len(ps.pieces)
+			if stackSize <= 1 {
+				return nil, false
+			}
+			poppedPiece := ps.pieces[stackSize-1]
+			ps.pieces = ps.pieces[:stackSize-1]
+			return poppedPiece, true
+		}
+
+		rowTraversed := func(row int) bool {
+			for _, piece := range ps.pieces {
+				if piece.GetRow() == row {
+					return true
 				}
 			}
+			return false
 		}
-		d(0, s("%s: took %s", anchor, time.Since(st)))
-
-		if r < rStop {
-			d(0, s("%s: Blanking out rows from %d  to %d", anchor, r, rStop))
-			c := anchor.Col
-			for vr := r; vr <= rStop; vr++ {
-				cell := Cell{vr, c}
-				ps.visited[cell] = true
+		var reachAnchorRow func() bool
+		reachAnchorRow = func() bool {
+			anchorRow := anchor.Row
+			getNextCell := func() Cell {
+				stackSize := len(ps.pieces)
+				if stackSize > 0 {
+					found, last := lastQueen()
+					if found {
+						return Cell{last.Row + 1, 0}
+					}
+				}
+				placeQueen(0, anchor.Col)
+				return Cell{1, 0}
 			}
-		}
-		if anchor.RowIs(size - 1) {
-			d(0, s("%s: Solution for column %d and took %s resulting %s", anchor, anchor.Col, time.Since(st), ps.pieces))
-			cells := make([]Cell, 0)
-			for _, piece := range ps.pieces {
-				cells = append(cells, piece.GetPosition())
+			next := getNextCell()
+			for next.Row <= anchorRow && !rowTraversed(anchorRow) {
+				c := next.Col
+				placed := false
+				for c < size {
+					placed = placeQueen(next.Row, c)
+					if placed {
+						break
+					}
+					c++
+				}
+				if placed {
+					next = Cell{next.Row + 1, 0}
+				} else {
+					poppedPiece, popped := popAQueen()
+					if !popped {
+						break
+					}
+					next = Cell{poppedPiece.GetRow(), poppedPiece.GetCol() + 1}
+				}
 			}
-			solutions <- Positions(cells)
-			ps.processed = true
+			return next.Row >= anchorRow
 		}
+		df(0, s("     %s: Start Processing\r", anchor))
+		if !ps.processed {
+			reached := reachAnchorRow()
+			if anchor.Row == (size-1) || !reached {
+				positions := make([]Cell, 0)
+				for _, piece := range ps.pieces {
+					positions = append(positions, piece.GetPosition())
+				}
+				solutions <- Positions(positions)
+				ps.processed = true
+				if reached {
+					df(1, s("     %s: Col (%d) is complete in(%s)           \r", anchor, anchor.Col, time.Since(st)))
+				} else {
+					d(1, s("     %s: Col (%d) is partial in(%s)", anchor, anchor.Col, time.Since(st)))
+				}
+			}
+			return
+		}
+		df(0, s("     %s: Col(%d) is already processed             \r", anchor, anchor.Col))
+		return
 	}()
-
 	return
 }
 
@@ -291,6 +282,7 @@ type Piece interface {
 	GetPosition() Cell
 	withInRows(upper, lower int) bool
 	GetRow() int
+	GetCol() int
 }
 
 type piececanbeplaced func([]Piece, Piece) bool
@@ -329,6 +321,11 @@ func (q Queen) withInRows(upper, lower int) bool {
 // GetRow function to get Row of the piece
 func (q Queen) GetRow() int {
 	return q.Position.Row
+}
+
+// GetCol function to get Col of the piece
+func (q Queen) GetCol() int {
+	return q.Position.Col
 }
 
 /*
@@ -458,7 +455,7 @@ func (q *QueenBoard) PlaceNQueens() []Positions {
 	}
 
 	defer func() {
-		d(0, s("Processed %d solutions with %d anchors and they took %s", processed, noOfAnchors, time.Since(st)))
+		d(0, s("\nProcessed %d solutions with %d anchors and they took %s", processed, noOfAnchors, time.Since(st)))
 		p(s("%dx%d ChessBoard has %d solutions (generated in %s) and they are:\n%v", q.Size(), q.Size(), len(solns), time.Since(st), solns))
 	}()
 
@@ -475,9 +472,9 @@ func (q *QueenBoard) PlaceNQueens() []Positions {
 				if positions.Size() == q.Size() {
 					q.solutions[col] = true
 					solns = append(solns, positions)
-					d(0, s("%d: processed for col(%d) \nprocessed(%d/%d) %v \nsolution(%d/%d)  %v",
-						processed, col, len(q.processed), q.Size(), q.processed, len(q.solutions), q.Size(), q.solutions))
-					fmt.Printf(s("   %s: processed for col(%d)      \r", nth(processed), col))
+					// d(0, s("%d: processed for col(%d) \nprocessed(%d/%d) %v \nsolution(%d/%d)  %v",
+					// 	processed, col, len(q.processed), q.Size(), q.processed, len(q.solutions), q.Size(), q.solutions))
+					fmt.Printf(s("   %s: processed for col(%d)                  Processed: (%d/%d) Solutions (%d/%d)     \r", nth(processed), col, len(q.processed), q.Size(), len(q.solutions), q.Size()))
 				}
 				if processed == q.Size() {
 					done <- true
