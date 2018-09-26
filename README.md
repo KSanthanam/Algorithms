@@ -51,7 +51,7 @@ anchor go routine for (R<sub>i</sub>,C<sub>j</sub>)
 Each anchor is submitted to a go routine. So there are approximately N<sup>4</sup> number of go routines. Most of these go routines will exit very quick if the predecessor anchor for the same column reached there before and done the work. 
 so if an anchor for R<sub>i+m</sub> has reached before R<sub>i</sub> then the corresponding go routine exits straight away. if anchor for R<sub>n</sub> reaches before any of the other anchors for the same column then all subsequent anchors for the said column will exit immediately.
 
-By implementing the go routines and channels, an efficiency of 10000x was achieved.
+By implementing the go routines and channels, an efficiency of **10000x** was achieved.
 
 <pre>
 Anchor is Anchor(R<sub>i</sub>,C<sub>j</sub>) 
