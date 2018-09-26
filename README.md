@@ -262,6 +262,12 @@ Found 10 solutions for Board 10x10  in 4.869127ms
 
 Found 15 solutions for Board 15x15  in 107.873553ms
 
+Found 19 solutions for Board 19x19  in 2.172028907s
+
 Found 20 solutions for Board 20x20  in 22.19845266s
+
+Found 21 solutions for Board 21x21  in 14.093889882s
+
+Found 22 solutions for Board 22x22  in 3m8.988134421s
 
 Found 25 solutions for Board 25x25  in 1m24.612503551s
