@@ -587,7 +587,7 @@ func (q *QueenBoard) PlaceNQueens() []Positions {
 		}
 	}()
 	wg.Wait()
-	p("Found", len(solns), fmt.Sprintf("solutions in %s ", time.Since(st)), solns)
+	p("Found", len(solns), fmt.Sprintf("solutions for Board %dx%d  in %s \n", q.Size(), q.Size(), time.Since(st)), solns)
 	return solns
 }
 

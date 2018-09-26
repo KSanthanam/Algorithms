@@ -54,7 +54,15 @@ so if an anchor for R<sub>i+m</sub> has reached before R<sub>i</sub> then the co
 By implementing the go routines and channels, an efficiency of **10000x** was achieved.
 
 <pre>
-Anchor is Anchor(R<sub>i</sub>,C<sub>j</sub>) 
+for row = 1 to N do
+  for col = 1 to N do
+    send Anchor(R<sub>row</sub>,C<sub>col</sub>) to Anchors Channel
+  done
+done
+
+for each Anchor in Anchor Channel processAnchor(Anchor)
+
+processAnchor where Anchor is Anchor(R<sub>i</sub>,C<sub>j</sub>) 
   action = nextRow(anchor)
   loop
     switch action {
@@ -136,4 +144,16 @@ popRow function returns action
 </pre>
 
 ### Summary
+Usage: bin/algos -debug=false -level=1 -size=4
+where debug is true/false
+      level is debug level
+      size is N
+
 The Algorithm implemented here runs N*N go routines and traverses the stack for its column. To keep the integrity of the PieceStack the stack for the particular column is processed by a single anchor at a time. The go routine for other anchors for this column waits for the given anchor to traverse and backtrack (if needed) to the row of the given anchor.
+
+### Results
+Found 2 solutions for Board 4x4  in 468.802µs
+Found 10 solutions for Board 10x10  in 4.869127ms
+Found 15 solutions for Board 15x15  in 107.873553ms
+Found 20 solutions for Board 20x20  in 22.19845266s
+Found 25 solutions for Board 25x25  in 1m24.612503551s
