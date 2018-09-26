@@ -11,22 +11,13 @@ Example 4x4
 All possible solutions are 
 
 1) [(0,1) (1,3) (2,0) (3,2)] 
-<table><tr><td>
- | Q | 0 | 1 | 2 | 3 |
- |:--|:--|:--|:--|:--|
- | 0 |   | Q |   |   | 
- | 1 |   |   |   | Q |
- | 2 | Q |   |   |   |
- | 3 |   |   | Q |   |
-</td><td>
- | Q | 0 | 1 | 2 | 3 |
- |:--|:--|:--|:--|:--|
- | 0 |   | Q |   |   | 
- | 1 |   |   |   | Q |
- | 2 | Q |   |   |   |
- | 3 |   |   | Q |   |
 
-</td></tr></table>
+ | Q | 0 | 1 | 2 | 3 |
+ |:--|:--|:--|:--|:--|
+ | 0 |   | Q |   |   | 
+ | 1 |   |   |   | Q |
+ | 2 | Q |   |   |   |
+ | 3 |   |   | Q |   |
 
 2) [(0,2) (1,0) (2,3) (3,1)] 
 
@@ -36,6 +27,110 @@ All possible solutions are
  | 1 | Q |   |   |   |
  | 2 |   |   |   | Q |
  | 3 |   | Q |   |   |
+
+Anchors for each Column
+
+Column 0 Anchors are (0,0),(1,0),(2,0),(3,0)
+Following are the stages processAnchor goes through
+
+<table>
+<tr><th>Stage 1 </th><th>Stage 2</th><th>Stage 3</th></tr>
+<tr><td>
+
+ | Q | 0 | 1 | 2 | 3 |
+ |:--|:--|:--|:--|:--|
+ | 0 | Q |   |   |   | 
+ | 1 |   |   | Q |   |
+ | 2 |   |   |   |   |
+ | 3 |   |   |   |   |
+
+</td><td>
+
+ | Q | 0 | 1 | 2 | 3 |
+ |:--|:--|:--|:--|:--|
+ | 0 | Q |   |   |   | 
+ | 1 |   |   | Q |   |
+ | 2 |   |   |   |   |
+ | 3 |   |   |   |   |
+
+</td><td>
+
+ | Q | 0 | 1 | 2 | 3 |
+ |:--|:--|:--|:--|:--|
+ | 0 | Q |   |   |   | 
+ | 1 |   |   |   | Q |
+ | 2 |   | Q |   |   |
+ | 3 |   |   |   |   |
+
+</td></tr></table>
+
+Column 1 Anchors are (0,1),(1,1),(2,1),(3,1)
+Following are the stages processAnchor goes through
+
+<table>
+<tr><th>Stage 1 </th></tr>
+<tr><td>
+
+ | Q | 0 | 1 | 2 | 3 |
+ |:--|:--|:--|:--|:--|
+ | 0 |   | Q |   |   | 
+ | 1 |   |   |   | Q |
+ | 2 | Q |   |   |   |
+ | 3 |   |   | Q |   |
+
+</td></tr></table>
+
+
+Column 2 Anchors are (0,2),(1,2),(2,2),(3,2)
+Following are the stages processAnchor goes through
+
+<table>
+<tr><th>Stage 1 </th></tr>
+<tr><td>
+
+ | Q | 0 | 1 | 2 | 3 |
+ |:--|:--|:--|:--|:--|
+ | 0 |   |   | Q |   | 
+ | 1 | Q |   |   |   |
+ | 2 |   |   |   | Q |
+ | 3 |   | Q |   |   |
+
+</td></tr></table>
+
+Column 3 Anchors are (0,3),(1,3),(2,3),(3,3)
+Following are the stages processAnchor goes through
+
+<table>
+<tr><th>Stage 1 </th><th>Stage 2</th><th>Stage 3</th></tr>
+<tr><td>
+
+ | Q | 0 | 1 | 2 | 3 |
+ |:--|:--|:--|:--|:--|
+ | 0 |   |   |   | Q | 
+ | 1 | Q |   |   |   |
+ | 2 |   |   | Q |   |
+ | 3 |   |   |   |   |
+
+</td><td>
+
+ | Q | 0 | 1 | 2 | 3 |
+ |:--|:--|:--|:--|:--|
+ | 0 |   |   |   | Q | 
+ | 1 |   | Q |   |   |
+ | 2 |   |   |   |   |
+ | 3 |   |   |   |   |
+
+</td><td>
+
+ | Q | 0 | 1 | 2 | 3 |
+ |:--|:--|:--|:--|:--|
+ | 0 |   |   |   | Q | 
+ | 1 |   |   |   |   |
+ | 2 |   |   |   |   |
+ | 3 |   |   |   |   |
+
+</td></tr></table>
+
 
 ### Solutions
 There are few solutions with inefficient timecomplexity. The worst being Q(N<sup>N</sup>)
