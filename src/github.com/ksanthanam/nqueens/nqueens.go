@@ -13,6 +13,26 @@ var (
 	pf     = fmt.Printf
 	s      = fmt.Sprintf
 	digits = 2
+	nth    = func(n, size int) string {
+		m := n % 10
+		sfx := ""
+		if n >= 11 && n <= 13 {
+			sfx = "th"
+		} else {
+			switch m {
+			case 1:
+				sfx = "st"
+			case 2:
+				sfx = "nd"
+			case 3:
+				sfx = "rd"
+			default:
+				sfx = "th"
+			}
+		}
+		format := fmt.Sprintf("%%%dd%%s", size)
+		return fmt.Sprintf(format, n, sfx)
+	}
 )
 
 var (
@@ -36,6 +56,49 @@ var (
 		}
 	}
 )
+var (
+	goroutines = GoRoutines{sync.Mutex{}, 0, 0, make(map[int]string), make(map[int]time.Time), make(map[int]string)}
+)
+
+// GoRoutines type
+type GoRoutines struct {
+	lock    sync.Mutex
+	entered int
+	exited  int
+	forFunc map[int]string
+	start   map[int]time.Time
+	times   map[int]string
+}
+
+// Enter function to add a Goroutine
+func (gr *GoRoutines) Enter(funcName string) int {
+	gr.lock.Lock()
+	defer gr.lock.Unlock()
+	gr.entered++
+	gr.forFunc[gr.entered] = funcName
+	gr.start[gr.entered] = time.Now()
+	return gr.entered
+}
+
+// Exit function to exit the goroutnes
+func (gr *GoRoutines) Exit(id int) {
+	gr.lock.Lock()
+	defer gr.lock.Unlock()
+	gr.times[id] = fmt.Sprintf("Go routine for %s took %s", gr.forFunc[id], time.Since(gr.start[id]))
+	gr.exited++
+	dfr(1, s("%s", gr.times[id]))
+	return
+}
+
+// List function to list all groutines and their timing
+func (gr *GoRoutines) List() {
+	gr.lock.Lock()
+	defer gr.lock.Unlock()
+	for id, time := range gr.times {
+		d(0, s("     %s: %s", nth(id, 9), time))
+	}
+	d(0, s("There are %d Entered and %d Exited goroutines", gr.entered, gr.exited))
+}
 
 // StackAction actions on PieceStack
 type StackAction int
@@ -326,10 +389,11 @@ func (qs *QueenStack) traverseToAnchor(anchor Cell, solutions chan Solution, wg 
 	go func() { // (3,0)
 		st := time.Now()
 		actions := make(chan StackAction, qs.size)
-		// done := make(chan bool, 1)
 		action := NextRow
+		gid := goroutines.Enter(fmt.Sprintf("%20s", "traverseToAnchor"))
 		defer func() {
 			dfr(1, s("     %s: - Stop with %s after %s", anchor, action, time.Since(st)))
+			goroutines.Exit(gid)
 			wg.Done()
 		}()
 		for {
@@ -365,7 +429,9 @@ func (qs *QueenStack) traverseToAnchor(anchor Cell, solutions chan Solution, wg 
 func (qs *QueenStack) processAnchor(anchor Cell, size int, solutions chan Solution, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
+		gid := goroutines.Enter(fmt.Sprintf("%20s", "processAnchor"))
 		defer func() {
+			goroutines.Exit(gid)
 			wg.Done()
 		}()
 		qs.traverseToAnchor(anchor, solutions, wg)
@@ -511,7 +577,12 @@ func (q *QueenBoard) String() string {
 func (q *QueenBoard) startAnchorQueue(anchors chan<- Cell, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
-		defer wg.Done()
+		gid := goroutines.Enter(fmt.Sprintf("%20s", "startAnchorQueue"))
+		defer func() {
+			goroutines.Exit(gid)
+			wg.Done()
+
+		}()
 		for row := 0; row < q.Size(); row++ {
 			for col := 0; col < q.Size(); col++ {
 				anchors <- Cell{row, col}
@@ -535,26 +606,6 @@ func (q *QueenBoard) PlaceNQueens() []Positions {
 	anchors := make(chan Cell, noOfAnchors)
 	solutions := make(chan Solution, q.Size())
 	solns := make([]Positions, 0)
-	nth := func(n int) string {
-		m := n % 10
-		sfx := ""
-		if n >= 11 && n <= 13 {
-			sfx = "th"
-		} else {
-			switch m {
-			case 1:
-				sfx = "st"
-			case 2:
-				sfx = "nd"
-			case 3:
-				sfx = "rd"
-			default:
-				sfx = "th"
-			}
-		}
-		format := fmt.Sprintf("%%%dd%%s", digits)
-		return fmt.Sprintf(format, n, sfx)
-	}
 
 	q.startAnchorQueue(anchors, wg)
 	for row := 0; row < q.Size(); row++ {
@@ -566,17 +617,22 @@ func (q *QueenBoard) PlaceNQueens() []Positions {
 	}
 	wg.Add(1)
 	go func() {
-		defer wg.Done()
+		gid := goroutines.Enter(fmt.Sprintf("%20s", "PlaceNQueens"))
+		defer func() {
+			goroutines.Exit(gid)
+			wg.Done()
+		}()
+
 		noOfSolutions := 0
 		for {
 			select {
 			case solution := <-solutions:
 				noOfSolutions++
 				if solution.Size() == q.Size() {
-					d(0, s("     %s Solution for %s Col took %20s and is %d long", nth(noOfSolutions), nth(solution.forAnchor.Col), time.Since(st), solution.Size()))
+					d(0, s("     %s Solution for %s Col took %20s and is %d long", nth(noOfSolutions, digits), nth(solution.forAnchor.Col, digits), time.Since(st), solution.Size()))
 					solns = append(solns, solution.positions)
 				} else {
-					d(0, s("     %s Partial  for %s Col took %20s and is %d long", nth(noOfSolutions), nth(solution.forAnchor.Col), time.Since(st), solution.Size()))
+					d(0, s("     %s Partial  for %s Col took %20s and is %d long", nth(noOfSolutions, digits), nth(solution.forAnchor.Col, digits), time.Since(st), solution.Size()))
 				}
 				if noOfSolutions == q.Size() {
 					done <- true
@@ -587,6 +643,7 @@ func (q *QueenBoard) PlaceNQueens() []Positions {
 		}
 	}()
 	wg.Wait()
+	goroutines.List()
 	p("Found", len(solns), fmt.Sprintf("solutions for Board %dx%d  in %s \n", q.Size(), q.Size(), time.Since(st)), solns)
 	return solns
 }
