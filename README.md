@@ -271,3 +271,31 @@ Found 21 solutions for Board 21x21  in 14.093889882s
 Found 22 solutions for Board 22x22  in 3m8.988134421s
 
 Found 25 solutions for Board 25x25  in 1m24.612503551s
+
+      1st Solution for 28th Col took      9m34.124887762s and is 30 long
+      2nd Solution for 29th Col took     11m48.831587143s and is 30 long
+      3rd Solution for 27th Col took     24m27.320351249s and is 30 long
+      4th Solution for 25th Col took     30m11.097575441s and is 30 long
+      5th Solution for 26th Col took     32m11.920358783s and is 30 long
+      6th Solution for 24th Col took      45m17.77867037s and is 30 long
+      7th Solution for 23rd Col took     46m49.624517124s and is 30 long
+      8th Solution for 17th Col took     56m56.317268522s and is 30 long
+      9th Solution for 21st Col took     1h1m8.825636808s and is 30 long
+     10th Solution for 14th Col took   1h46m37.190281609s and is 30 long
+     11th Solution for 15th Col took   1h54m47.518960064s and is 30 long
+     12th Solution for 20th Col took   1h55m48.047302863s and is 30 long
+     13th Solution for 16th Col took   1h57m27.719530822s and is 30 long
+     14th Solution for 19th Col took   1h59m40.918951655s and is 30 long
+     15th Solution for 12th Col took    2h0m31.994823474s and is 30 long
+     16th Solution for 11th Col took     2h2m15.24557813s and is 30 long
+     17th Solution for  9th Col took    2h3m43.981316128s and is 30 long
+     18th Solution for 22nd Col took     2h9m9.944309036s and is 30 long
+     19th Solution for 18th Col took    2h16m56.77916977s and is 30 long
+     20th Solution for 10th Col took   2h31m29.901413772s and is 30 long
+     21st Solution for  6th Col took   2h32m17.004094943s and is 30 long
+     22nd Solution for 13th Col took   2h43m46.517150932s and is 30 long
+     23rd Solution for  7th Col took     3h47m9.75321572s and is 30 long
+     24th Solution for  0th Col took   5h48m43.115539259s and is 30 long
+     25th Solution for  3rd Col took   5h49m27.725350314s and is 30 long
+     26th Solution for  1st Col took    6h15m1.320787215s and is 30 long
+     27th Solution for  2nd Col took   6h17m13.277885383s and is 30 long

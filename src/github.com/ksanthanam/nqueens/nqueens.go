@@ -58,6 +58,7 @@ var (
 )
 var (
 	goroutines = GoRoutines{sync.Mutex{}, 0, 0, make(map[int]string), make(map[int]time.Time), make(map[int]string)}
+	solnsdisp  = SolutionDisplay{sync.Mutex{}, 4, 2, make(map[int]bool)}
 )
 
 // GoRoutines type
@@ -86,7 +87,7 @@ func (gr *GoRoutines) Exit(id int) {
 	defer gr.lock.Unlock()
 	gr.times[id] = fmt.Sprintf("Go routine for %s took %s", gr.forFunc[id], time.Since(gr.start[id]))
 	gr.exited++
-	dfr(1, s("%s", gr.times[id]))
+	dfr(2, s("%s", gr.times[id]))
 	return
 }
 
@@ -95,9 +96,9 @@ func (gr *GoRoutines) List() {
 	gr.lock.Lock()
 	defer gr.lock.Unlock()
 	for id, time := range gr.times {
-		d(0, s("     %s: %s", nth(id, 9), time))
+		d(2, s("     %s: %s", nth(id, 9), time))
 	}
-	d(0, s("There are %d Entered and %d Exited goroutines", gr.entered, gr.exited))
+	d(2, s("There are %d Entered and %d Exited goroutines", gr.entered, gr.exited))
 }
 
 // StackAction actions on PieceStack
@@ -112,8 +113,6 @@ const (
 	PopStack
 	// Traversed the row has been traversed
 	Traversed
-	// RowHasNoPosition to indicate can't place the Piece
-	RowHasNoPosition
 )
 
 // Placeable type to indicate a Piece is placeable or not
@@ -123,12 +122,11 @@ type Placeable bool
 func (p Placeable) String() string {
 	if p {
 		return "Placeable"
-	} else {
-		return "Not Placeable"
 	}
+	return "Not Placeable"
 }
 func (sa StackAction) String() string {
-	size := 20
+	size := 9
 	sizeText := func(display string) string {
 		format := fmt.Sprintf("%%%ds", size)
 		return fmt.Sprintf(format, display)
@@ -142,8 +140,6 @@ func (sa StackAction) String() string {
 		return sizeText("PopStack")
 	case Traversed:
 		return sizeText("Traversed")
-	case RowHasNoPosition:
-		return sizeText("RowHasNoPosition")
 	default:
 		return sizeText("")
 	}
@@ -245,9 +241,7 @@ func (qs *QueenStack) popStack(anchor Cell) StackAction {
 		if action == Traversed {
 			qs.traversed[anchor.Row] = true
 		}
-		//        12345678901234567890123456789012345678901234567890
-		dfr(1, s("     %s: popStack - %s with result %d long", anchor, action, len(qs.pieces)))
-
+		dfr(1, s(" %s: popStack %s with result %d long %s", anchor, action, len(qs.pieces), solnsdisp.String()))
 		qs.lock.Unlock()
 	}()
 	poppable := func(r int) bool {
@@ -321,7 +315,7 @@ func (qs *QueenStack) nextRow(anchor Cell) StackAction { // (3,3)
 				qs.processed = true
 			}
 		}
-		dfr(1, s("     %s: nextRow  - %s with result %d long", anchor, action, len(qs.pieces)))
+		dfr(1, s(" %s: nextRow  %s with result %d long %s", anchor, action, len(qs.pieces), solnsdisp.String()))
 		qs.lock.Unlock()
 	}()
 	newQueen := func(row, col int) Piece {
@@ -392,7 +386,7 @@ func (qs *QueenStack) traverseToAnchor(anchor Cell, solutions chan Solution, wg 
 		action := NextRow
 		gid := goroutines.Enter(fmt.Sprintf("%20s", "traverseToAnchor"))
 		defer func() {
-			dfr(1, s("     %s: - Stop with %s after %s", anchor, action, time.Since(st)))
+			dfr(1, s(" %s: Stop with %s after %s", anchor, action, time.Since(st)))
 			goroutines.Exit(gid)
 			wg.Done()
 		}()
@@ -439,7 +433,7 @@ func (qs *QueenStack) processAnchor(anchor Cell, size int, solutions chan Soluti
 	return
 }
 
-// NewQueenStack function for CellStack
+// NewQueenStack function for QueenStack
 func NewQueenStack(size int) PieceStack {
 	return &QueenStack{sync.Mutex{}, size, make([]Piece, 0), make(map[Cell]bool, 0), make(map[int]bool, 0), false}
 }
@@ -606,6 +600,7 @@ func (q *QueenBoard) PlaceNQueens() []Positions {
 	anchors := make(chan Cell, noOfAnchors)
 	solutions := make(chan Solution, q.Size())
 	solns := make([]Positions, 0)
+	solnsdisp.SetSize(q.Size())
 
 	q.startAnchorQueue(anchors, wg)
 	for row := 0; row < q.Size(); row++ {
@@ -628,11 +623,14 @@ func (q *QueenBoard) PlaceNQueens() []Positions {
 			select {
 			case solution := <-solutions:
 				noOfSolutions++
+				solnsdisp.SetSolution(solution.forAnchor.Col)
+				filler := s(s("%%%ds", q.Size()*2), " ")
+				length := s(s("%%%dd", digits), solution.Size())
 				if solution.Size() == q.Size() {
-					d(0, s("     %s Solution for %s Col took %20s and is %d long", nth(noOfSolutions, digits), nth(solution.forAnchor.Col, digits), time.Since(st), solution.Size()))
+					d(0, s(" %s Solution for %s Col took %18s and is %s long %s", nth(noOfSolutions, digits), nth(solution.forAnchor.Col, digits), time.Since(st), length, filler))
 					solns = append(solns, solution.positions)
 				} else {
-					d(0, s("     %s Partial  for %s Col took %20s and is %d long", nth(noOfSolutions, digits), nth(solution.forAnchor.Col, digits), time.Since(st), solution.Size()))
+					d(0, s(" %s Partial  for %s Col took %18s and is %s long %s", nth(noOfSolutions, digits), nth(solution.forAnchor.Col, digits), time.Since(st), length, filler))
 				}
 				if noOfSolutions == q.Size() {
 					done <- true
@@ -720,6 +718,48 @@ func (s Solution) String() string {
 // Size function
 func (s Solution) Size() int {
 	return s.positions.Size()
+}
+
+// SolutionDisplay type
+type SolutionDisplay struct {
+	lock   sync.Mutex
+	size   int
+	digits int
+	solns  map[int]bool
+}
+
+// SetSize function
+func (sd *SolutionDisplay) SetSize(size int) {
+	sd.lock.Lock()
+	defer sd.lock.Unlock()
+	digits = 0
+	for d := size; d >= 1; d = d / 10 {
+		digits++
+	}
+	sd.size = size
+	sd.digits = digits
+}
+
+// SetSolution function
+func (sd *SolutionDisplay) SetSolution(col int) {
+	sd.lock.Lock()
+	defer sd.lock.Unlock()
+	sd.solns[col] = true
+}
+
+// String function
+func (sd *SolutionDisplay) String() string {
+	sd.lock.Lock()
+	defer sd.lock.Unlock()
+	solnsdisplay := make([]string, 0)
+	for pos := 0; pos < sd.size; pos++ {
+		if sd.solns[pos] {
+			solnsdisplay = append(solnsdisplay, s(s("%%%ds", sd.digits), "x"))
+		} else {
+			solnsdisplay = append(solnsdisplay, s(s("%%%dd", sd.digits), pos))
+		}
+	}
+	return strings.Join(solnsdisplay, "")
 }
 
 /*
