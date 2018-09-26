@@ -153,7 +153,11 @@ The Algorithm implemented here runs N*N go routines and traverses the stack for 
 
 ### Results
 Found 2 solutions for Board 4x4  in 468.802µs
+
 Found 10 solutions for Board 10x10  in 4.869127ms
+
 Found 15 solutions for Board 15x15  in 107.873553ms
+
 Found 20 solutions for Board 20x20  in 22.19845266s
+
 Found 25 solutions for Board 25x25  in 1m24.612503551s
