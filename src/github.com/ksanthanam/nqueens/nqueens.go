@@ -572,8 +572,8 @@ func (q *QueenBoard) PlaceNQueens() []Positions {
 			select {
 			case solution := <-solutions:
 				noOfSolutions++
-				d(0, s("     %s Solution for %s Col took %20s and is %d long", nth(noOfSolutions), nth(solution.forAnchor.Col), time.Since(st), solution.Size()))
 				if solution.Size() == q.Size() {
+					d(0, s("     %s Solution for %s Col took %20s and is %d long", nth(noOfSolutions), nth(solution.forAnchor.Col), time.Since(st), solution.Size()))
 					solns = append(solns, solution.positions)
 				} else {
 					d(0, s("     %s Partial  for %s Col took %20s and is %d long", nth(noOfSolutions), nth(solution.forAnchor.Col), time.Since(st), solution.Size()))

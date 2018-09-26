@@ -68,15 +68,15 @@ Anchor is Anchor(R<sub>i</sub>,C<sub>j</sub>)
 
 nextRow function returns action
   if stackSize == 0 then
-    stack = [(0,j)]
+    stack = [(1,j)]
     stack.visited[0,j] = true
   end
-  if stackSize - 1 >= i then
+  if stackSize >= i then
     stack.traversed[i] = true
     return Trversed
   end
   r = stackSize
-  c = 0
+  c = 1
   while c < N do
     while c < N and stack.visited[(r,c)] do
       c++
@@ -88,7 +88,7 @@ nextRow function returns action
     if c < N && can place (r,c) given stack of queens then
       add (r,c) to stack
       stack.visited[(r,c)] = true
-      if stackSize - 1 > i then 
+      if stackSize  > i then 
         stack.traversed[i] = true
         return Traversed
       end
@@ -105,7 +105,7 @@ popRow function returns action
     stack.traversed[i] = true
     return Traversed
   end
-  r = stackSize - 1
+  r = stackSize 
   for rows stackSize to N do
     for col 1 to N do
       stack.visited[(r,c)] = false 
@@ -121,7 +121,7 @@ popRow function returns action
     done
     if c < N && can place (r,c) for given queens in stack then
       add (r,c) to stack
-      if stackSize - 1 > i then 
+      if stackSize  > i then 
         stack.traversed[i] = true
         return Traversed
       end
