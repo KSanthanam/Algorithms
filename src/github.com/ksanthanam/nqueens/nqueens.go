@@ -248,6 +248,7 @@ func (qs *QueenStack) popStack(anchor Cell) StackAction {
 }
 
 func (qs *QueenStack) nextRow(anchor Cell) StackAction { // (3,3)
+
 	qs.lock.Lock()
 	var action StackAction
 	defer func() {
@@ -324,22 +325,39 @@ func (qs *QueenStack) traverseToAnchor(anchor Cell, solutions chan Solution, wg 
 	wg.Add(1)
 	go func() { // (3,0)
 		st := time.Now()
+		actions := make(chan StackAction, qs.size)
+		// done := make(chan bool, 1)
 		action := NextRow
 		defer func() {
 			dfr(1, s("     %s: - Stop with %s after %s", anchor, action, time.Since(st)))
 			wg.Done()
 		}()
 		for {
-			switch action {
-			case NextRow:
-				action = qs.nextRow(anchor)
-			case PopStack:
-				action = qs.popStack(anchor)
-			case Traversed:
-				if anchor.RowIs(qs.size - 1) {
-					solutions <- Solution{anchor, qs.getPieces()}
+			select {
+			case action = <-actions:
+				switch action {
+				case NextRow:
+					actions <- qs.nextRow(anchor)
+				case PopStack:
+					actions <- qs.popStack(anchor)
+				case Traversed:
+					if anchor.RowIs(qs.size - 1) {
+						solutions <- Solution{anchor, qs.getPieces()}
+					}
+					return
 				}
-				return
+			default:
+				switch action {
+				case NextRow:
+					actions <- qs.nextRow(anchor)
+				case PopStack:
+					actions <- qs.popStack(anchor)
+				case Traversed:
+					if anchor.RowIs(qs.size - 1) {
+						solutions <- Solution{anchor, qs.getPieces()}
+					}
+					return
+				}
 			}
 		}
 	}()

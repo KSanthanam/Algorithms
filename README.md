@@ -51,44 +51,88 @@ anchor go routine for (R<sub>i</sub>,C<sub>j</sub>)
 Each anchor is submitted to a go routine. So there are approximately N<sup>4</sup> number of go routines. Most of these go routines will exit very quick if the predecessor anchor for the same column reached there before and done the work. 
 so if an anchor for R<sub>i+m</sub> has reached before R<sub>i</sub> then the corresponding go routine exits straight away. if anchor for R<sub>n</sub> reaches before any of the other anchors for the same column then all subsequent anchors for the said column will exit immediately.
 
-By implementing the go routines, an efficiency of 5000X was achieved.
+By implementing the go routines and channels, an efficiency of 10000x was achieved.
 
 <pre>
 Anchor is Anchor(R<sub>i</sub>,C<sub>j</sub>) 
+  action = nextRow(anchor)
+  loop
+    switch action {
+      NextRow:
+        nextRow(anchor)
+      PopStack:
+        popStack(anchor)
+      Traversed:
+        return
+    }
 
-if PieceStack for Anchor.Col not processed then
-
-  lastPiece = Last Piece in PieceStack
-  nextPiece = NextPiece(lastPiece.Row + 1, 0)
-
-  for nextPiece.Row <= Anchor.Row && 
-      Anchor.Row not already traversed do
-      c is nextPiece.Col
-      placed = false
-      for c < size do
-        if Position nextPiece.Row,c is not in path then 
-          place Queen at nextPiece.Row,c
-          break
-        end
-        c++
-      done
-      if placed then
-        nextPiece = nextPiece.Row + 1, 0
-      else 
-        pop a piece from PieceStack (up to 1 piece at Row 0)
-        if piece not popped then
-          break
-        end
-        nextPiece = poppedPiece.Row, poppedPiece.Col + 1
-      end
-  done
-  Anchor.Row reached if nextPiece.Row >= Anchor.Row else false
-
-  if Anchor.Row == N OR Anchor.Row not reached then
-    send Pieces in PieceStack as Solution if length of PieceStack == size
-    Set Anchor.Col Processed to true
+nextRow function returns action
+  if stackSize == 0 then
+    stack = [(0,j)]
+    stack.visited[0,j] = true
   end
-end
+  if stackSize - 1 >= i then
+    stack.traversed[i] = true
+    return Trversed
+  end
+  r = stackSize
+  c = 0
+  while c < N do
+    while c < N and stack.visited[(r,c)] do
+      c++
+    done
+    while c < N && can not place (r,c) given stack of queens do
+      stack.visited[(r,c)] = true
+      c++
+    done
+    if c < N && can place (r,c) given stack of queens then
+      add (r,c) to stack
+      stack.visited[(r,c)] = true
+      if stackSize - 1 > i then 
+        stack.traversed[i] = true
+        return Traversed
+      end
+      return NextRow
+    end
+  done
+  return PopStack
+
+popRow function returns action
+  if stack.traversed[i] then
+    return Traversed
+  end
+  if stackSize <= 1 then
+    stack.traversed[i] = true
+    return Traversed
+  end
+  r = stackSize - 1
+  for rows stackSize to N do
+    for col 1 to N do
+      stack.visited[(r,c)] = false 
+    done
+  done
+  while r <= i and stackSize > 1 do
+    r = lastPiece's row
+    c = lastPiece's col + 1
+    pop lastPiece from stack
+    while c < N && cant place (r,c) for given queens in stack do
+      stack.visited[(r,c)] = true
+      c++
+    done
+    if c < N && can place (r,c) for given queens in stack then
+      add (r,c) to stack
+      if stackSize - 1 > i then 
+        stack.traversed[i] = true
+        return Traversed
+      end
+      return NextRow
+    end
+    if c >= N then 
+      return PopStack
+    end
+  done
+  stack.traversed[i] = true
+  return Traversed
 </pre>
 
 ### Summary
