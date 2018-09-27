@@ -36,6 +36,13 @@ var (
 )
 
 var (
+	wg      = &sync.WaitGroup{}
+	solnset = SolutionDisplay{sync.Mutex{}, 4, 2, make(map[int]bool)}
+	logs    = make(chan string, 1000)
+	done    = make(chan bool, 1)
+)
+
+var (
 	// DEBUG ON/OF
 	DEBUG = false
 	// LEVEL for DEBUG
@@ -54,6 +61,28 @@ var (
 		if DEBUG && level <= LEVEL {
 			pf(strings.Join([]string{str, "                             \r"}, ""))
 		}
+	}
+	logn = func(str string) string {
+		return strings.Join([]string{str, "\n"}, "")
+	}
+	logr = func(str string) string {
+		return strings.Join([]string{str, "                             \r"}, "")
+	}
+	logger = func(done chan bool) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case str := <-logs:
+					pf(str)
+				case <-done:
+					return
+
+				}
+
+			}
+		}()
 	}
 )
 
@@ -132,7 +161,7 @@ func (c Cell) AtFirstRow() bool {
 
 // PieceStack Interface for ChessBoard
 type PieceStack interface {
-	processAnchor(Cell, int, chan Solution, *sync.WaitGroup)
+	processAnchor(Cell, int, chan Solution)
 	canPieceBePlaced(Cell) piececanbeplaced
 	GetStacks() []Piece
 }
@@ -169,6 +198,20 @@ func (qs *QueenStack) GetStacks() []Piece {
 	return pieces
 }
 
+// String function
+func (qs *QueenStack) String() string {
+	length := len(qs.pieces)
+	blank := qs.size - length
+	bars := make([]string, 0)
+	for c := 0; c < length; c++ {
+		bars = append(bars, "⚄")
+	}
+	for c := 0; c < blank; c++ {
+		bars = append(bars, "⚀")
+	}
+	bar := strings.Join(bars, "")
+	return bar
+}
 func (qs *QueenStack) hasBeenProcessed() bool {
 	qs.lock.Lock()
 	processed := qs.processed
@@ -196,10 +239,21 @@ func (qs *QueenStack) getPieces() Positions {
 func (qs *QueenStack) popStack(anchor Cell) StackAction {
 	qs.lock.Lock()
 	var action StackAction
+	debug := func() {
+		wg.Add(1)
+		go func() {
+			level := 1
+			if DEBUG && level <= LEVEL {
+				logs <- logr(s(" %s: %10s count %s %s", anchor, "popStack", qs.String(), solnset.String()))
+			}
+			wg.Done()
+		}()
+	}
 	defer func() {
 		if action == Traversed {
 			qs.traversed[anchor.Row] = true
 		}
+		debug()
 		qs.lock.Unlock()
 	}()
 	poppable := func(r int) bool {
@@ -266,6 +320,17 @@ func (qs *QueenStack) nextRow(anchor Cell) StackAction { // (3,3)
 
 	qs.lock.Lock()
 	var action StackAction
+	debug := func() {
+		wg.Add(1)
+		go func() {
+			level := 1
+			if DEBUG && level <= LEVEL {
+				logs <- logr(s(" %s: %10s count %s %s", anchor, "nextRow", qs.String(), solnset.String()))
+			}
+			wg.Done()
+		}()
+	}
+
 	defer func() {
 		if action == Traversed {
 			qs.traversed[anchor.Row] = true
@@ -273,6 +338,7 @@ func (qs *QueenStack) nextRow(anchor Cell) StackAction { // (3,3)
 				qs.processed = true
 			}
 		}
+		debug()
 		qs.lock.Unlock()
 	}()
 	newQueen := func(row, col int) Piece {
@@ -330,7 +396,7 @@ func (qs *QueenStack) nextRow(anchor Cell) StackAction { // (3,3)
 	action = PopStack
 	return action
 }
-func (qs *QueenStack) pipe(anchor Cell, inAction StackAction, outAction chan StackAction, wg *sync.WaitGroup) {
+func (qs *QueenStack) pipe(anchor Cell, inAction StackAction, outAction chan StackAction) {
 	wg.Add(1)
 	go func(anchor Cell, action StackAction) {
 		switch action {
@@ -343,18 +409,30 @@ func (qs *QueenStack) pipe(anchor Cell, inAction StackAction, outAction chan Sta
 	}(anchor, inAction)
 	return
 }
-func (qs *QueenStack) traverseToAnchor(anchor Cell, solutions chan Solution, wg *sync.WaitGroup) {
+func (qs *QueenStack) traverseToAnchor(anchor Cell, solutions chan Solution) {
 	wg.Add(1)
 	go func() { // (3,0)
 		defer func() {
 			wg.Done()
 		}()
+		debug := func() {
+			wg.Add(1)
+			go func() {
+
+				level := 1
+				if DEBUG && level <= LEVEL {
+					logs <- logr(s(" %s: %10s count %s %s", anchor, "nextAction", qs.String(), solnset.String()))
+				}
+				wg.Done()
+			}()
+		}
+
 		nextAction := NextRow
 		next := make(chan StackAction, qs.size)
 		for {
-			qs.pipe(anchor, nextAction, next, wg)
+			qs.pipe(anchor, nextAction, next)
 			nextAction = <-next
-			// dfr(1, s(" %s: %10s %s with result %2d long %s", anchor, "nextAction", nextAction, len(qs.pieces), solnsdisp.String()))
+			debug()
 			if nextAction == Traversed {
 				if anchor.RowIs(qs.size - 1) {
 					solutions <- Solution{anchor, qs.getPieces()}
@@ -364,10 +442,10 @@ func (qs *QueenStack) traverseToAnchor(anchor Cell, solutions chan Solution, wg 
 		}
 	}()
 }
-func (qs *QueenStack) processAnchor(anchor Cell, size int, solutions chan Solution, wg *sync.WaitGroup) {
+func (qs *QueenStack) processAnchor(anchor Cell, size int, solutions chan Solution) {
 	wg.Add(1)
 	go func() {
-		qs.traverseToAnchor(anchor, solutions, wg)
+		qs.traverseToAnchor(anchor, solutions)
 		wg.Done()
 	}()
 	return
@@ -508,7 +586,7 @@ func (q *QueenBoard) String() string {
 	return fmt.Sprintf("Board %dx%d Placed(%v) Solutions(%v)", q.size, q.size, q.processed, q.solutions)
 }
 
-func (q *QueenBoard) startAnchorQueue(anchors chan<- Cell, wg *sync.WaitGroup) {
+func (q *QueenBoard) startAnchorQueue(anchors chan<- Cell) {
 	wg.Add(1)
 	go func() {
 		for row := 0; row < q.Size(); row++ {
@@ -529,43 +607,58 @@ func (q *QueenBoard) PlaceNQueens() []Positions {
 	for d := size; d >= 1; d = d / 10 {
 		digits++
 	}
+	solnset.SetSize(q.Size())
+	logger(done)
+
 	noOfAnchors := q.Size() * q.Size()
-	wg := &sync.WaitGroup{}
-	// done := make(chan bool, 1)
 	anchors := make(chan Cell, noOfAnchors)
 	solutions := make(chan Solution, q.Size())
 	solns := make([]Positions, 0)
 
-	q.startAnchorQueue(anchors, wg)
+	q.startAnchorQueue(anchors)
 	for row := 0; row < q.Size(); row++ {
 		for col := 0; col < q.Size(); col++ {
 			anchor := <-anchors
-			// dfr(1, s("     %s: PROCESSING Anchor %s", anchor, anchor))
-			q.queens[anchor.Col].processAnchor(anchor, q.Size(), solutions, wg)
+			q.queens[anchor.Col].processAnchor(anchor, q.Size(), solutions)
 		}
 	}
-	// wg.Add(1)
+	wg.Add(1)
 	go func() {
-		// gid := goroutines.Enter(fmt.Sprintf("%20s", "PlaceNQueens"))
-		// defer func() {
-		// 	// goroutines.Exit(gid)
-		// 	wg.Done()
-		// }()
-
+		defer wg.Done()
+		debug := func(solution Solution, noOfSolutions int) {
+			if !DEBUG || 0 < LEVEL {
+				return
+			}
+			wg.Add(1)
+			go func() {
+				filler := s(s("%%%ds", q.Size()*2), " ")
+				length := s(s("%%%dd", digits), solution.Size())
+				if solution.Size() == q.Size() {
+					logs <- logn(s(" %s Solution for %s Col took %18s and is %s long %s  \n", nth(noOfSolutions, digits), nth(solution.forAnchor.Col, digits), time.Since(st), length, filler))
+				} else {
+					logs <- logn(s(" %s Partial  for %s Col took %18s and is %s long %s  \n", nth(noOfSolutions, digits), nth(solution.forAnchor.Col, digits), time.Since(st), length, filler))
+				}
+				wg.Done()
+			}()
+		}
 		noOfSolutions := 0
 		for {
 			select {
 			case solution := <-solutions:
 				noOfSolutions++
-				filler := s(s("%%%ds", q.Size()*2), " ")
-				length := s(s("%%%dd", digits), solution.Size())
+				debug(solution, noOfSolutions)
+				// filler := s(s("%%%ds", q.Size()*2), " ")
+				// length := s(s("%%%dd", digits), solution.Size())
 				if solution.Size() == q.Size() {
-					d(0, s(" %s Solution for %s Col took %18s and is %s long %s", nth(noOfSolutions, digits), nth(solution.forAnchor.Col, digits), time.Since(st), length, filler))
+					// d(0, s(" %s Solution for %s Col took %18s and is %s long %s", nth(noOfSolutions, digits), nth(solution.forAnchor.Col, digits), time.Since(st), length, filler))
 					solns = append(solns, solution.positions)
 				} else {
-					d(0, s(" %s Partial  for %s Col took %18s and is %s long %s", nth(noOfSolutions, digits), nth(solution.forAnchor.Col, digits), time.Since(st), length, filler))
+					// d(0, s(" %s Partial  for %s Col took %18s and is %s long %s", nth(noOfSolutions, digits), nth(solution.forAnchor.Col, digits), time.Since(st), length, filler))
 				}
+				solnset.SetSolution(solution.forAnchor.Col)
 				if noOfSolutions == q.Size() {
+					done <- true
+					// close(logs)
 					return
 				}
 				// case <-done:

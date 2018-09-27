@@ -13,7 +13,7 @@ import (
 // )
 
 func main() {
-	runtime.GOMAXPROCS(50)
+	runtime.GOMAXPROCS(150)
 	// fmt.Println(runtime.GOMAXPROCS(-1))
 	debugPtr := flag.Bool("debug", false, "Debug true/false")
 	sizePtr := flag.Int("size", 10, "Debug true/false")
