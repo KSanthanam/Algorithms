@@ -56,6 +56,50 @@ var (
 		}
 	}
 )
+var (
+	goroutines = GoRoutines{sync.Mutex{}, 0, 0, make(map[int]string), make(map[int]time.Time), make(map[int]string)}
+	solnsdisp  = SolutionDisplay{sync.Mutex{}, 4, 2, make(map[int]bool)}
+)
+
+// GoRoutines type
+type GoRoutines struct {
+	lock    sync.Mutex
+	entered int
+	exited  int
+	forFunc map[int]string
+	start   map[int]time.Time
+	times   map[int]string
+}
+
+// Enter function to add a Goroutine
+func (gr *GoRoutines) Enter(funcName string) int {
+	gr.lock.Lock()
+	defer gr.lock.Unlock()
+	gr.entered++
+	gr.forFunc[gr.entered] = funcName
+	gr.start[gr.entered] = time.Now()
+	return gr.entered
+}
+
+// Exit function to exit the goroutnes
+func (gr *GoRoutines) Exit(id int) {
+	gr.lock.Lock()
+	defer gr.lock.Unlock()
+	gr.times[id] = fmt.Sprintf("Go routine for %s took %s", gr.forFunc[id], time.Since(gr.start[id]))
+	gr.exited++
+	dfr(2, s("%s", gr.times[id]))
+	return
+}
+
+// List function to list all groutines and their timing
+func (gr *GoRoutines) List() {
+	gr.lock.Lock()
+	defer gr.lock.Unlock()
+	for id, time := range gr.times {
+		d(2, s("     %s: %s", nth(id, 9), time))
+	}
+	d(2, s("There are %d Entered and %d Exited goroutines", gr.entered, gr.exited))
+}
 
 // StackAction actions on PieceStack
 type StackAction int
@@ -164,33 +208,30 @@ func (qs *QueenStack) canPieceBePlaced(anchor Cell) piececanbeplaced {
 // GetStacks func
 func (qs *QueenStack) GetStacks() []Piece {
 	qs.lock.Lock()
-	pieces := qs.pieces
-	qs.lock.Unlock()
-	return pieces
+	defer qs.lock.Unlock()
+	return qs.pieces
 }
 
 func (qs *QueenStack) hasBeenProcessed() bool {
 	qs.lock.Lock()
-	processed := qs.processed
-	qs.lock.Unlock()
-	return processed
+	defer qs.lock.Unlock()
+	return qs.processed
 }
 
 func (qs *QueenStack) setProcessed(flag bool) {
 	qs.lock.Lock()
+	defer qs.lock.Unlock()
 	qs.processed = flag
-	qs.lock.Unlock()
 }
 func (qs *QueenStack) getPieces() Positions {
 	qs.lock.Lock()
+	defer qs.lock.Unlock()
 	positions := make([]Cell, 0)
 	for _, piece := range qs.pieces {
 		positions = append(positions, piece.GetPosition())
 	}
 	qs.processed = true
-	result := Positions(positions)
-	qs.lock.Unlock()
-	return result
+	return Positions(positions)
 }
 
 func (qs *QueenStack) popStack(anchor Cell) StackAction {
@@ -200,6 +241,7 @@ func (qs *QueenStack) popStack(anchor Cell) StackAction {
 		if action == Traversed {
 			qs.traversed[anchor.Row] = true
 		}
+		dfr(1, s(" %s: popStack %s with result %d long %s", anchor, action, len(qs.pieces), solnsdisp.String()))
 		qs.lock.Unlock()
 	}()
 	poppable := func(r int) bool {
@@ -273,6 +315,7 @@ func (qs *QueenStack) nextRow(anchor Cell) StackAction { // (3,3)
 				qs.processed = true
 			}
 		}
+		dfr(1, s(" %s: nextRow  %s with result %d long %s", anchor, action, len(qs.pieces), solnsdisp.String()))
 		qs.lock.Unlock()
 	}()
 	newQueen := func(row, col int) Piece {
@@ -297,15 +340,18 @@ func (qs *QueenStack) nextRow(anchor Cell) StackAction { // (3,3)
 	c := 0
 	nextPosition := Cell{r, c} // (1,0), (2,0), (3,0), (2,0)
 	for c < qs.size {          // 0 < 4, 0 < 4
-		nextPosition = Cell{r, c}                     // (1,0), (2,0), (3,0), (2,0)
+		nextPosition = Cell{r, c} // (1,0), (2,0), (3,0), (2,0)
+		// d(1, s("     %s: O:Inspecting position %t%s with %s", anchor, qs.visited[nextPosition], nextPosition, qs.pieces))
 		for c < qs.size && qs.visited[nextPosition] { // 0 < 4 && f(1,0), 0 < 4 && f(2,0), 0 < 4 && f(3,0),
 			// 0 < 4 && f(2,0)
 			c++
 			nextPosition = Cell{r, c}
+			// d(1, s("     %s: I:Inspecting position %t%s with %s", anchor, qs.visited[nextPosition], nextPosition, qs.pieces))
 		}
 		nextPosition = Cell{r, c}       // (1,0), (2,0), (3,0), (2,0)
 		queen := NewQueen(nextPosition) // Q(1,0), Q(2,0), Q(3,0), Q(2,0)
 		can := qs.canPieceBePlaced(anchor)
+		// d(1, s("     %s: O:Can position %t%s with %s", anchor, !can(qs.pieces, queen), nextPosition, qs.pieces))
 		for c < qs.size && !can(qs.pieces, queen) { // 0 < 4 && can(1,0), 0 < 4 && cant(2,0), 1 < 4 && cant(2,1),
 			// 2 < 4 && can(2,2), 0 < 4 && cant(3,0), 1 < 4 && cant(3,1), 2 < 4 && cant(3,2), 3 < 4 && cant(3,3),
 			// 0 < 4 && cant(2,0), 1 < 0 && cant(2,1), 2 < 4 && cant(2,2), 3 < 4 && cant(2,3)
@@ -313,6 +359,7 @@ func (qs *QueenStack) nextRow(anchor Cell) StackAction { // (3,3)
 			c++                             // 1,2, 1, 2, 3, 4, 1, 2,3, 4
 			nextPosition = Cell{r, c}       // (2,1), (2,2), (3,1), (3,2), (3,3), (3,4), (2,1), (2,2), (2,3), (2,4)
 			queen = NewQueen(nextPosition)  // Q(2,1), Q(2,2), Q(3,1), Q(3,2), Q(3,3), Q(3,4), Q(2,1), Q(2,2), Q(2,3), Q(2,4)
+			// d(1, s("     %s: O:Can position %t%s with %s", anchor, can(qs.pieces, queen), nextPosition, qs.pieces))
 		}
 		if c < qs.size && can(qs.pieces, newQueen(r, c)) { // 2 < 4 && can(2,2), 4 < 4, 4 < 4
 			qs.pieces = append(qs.pieces, newQueen(r, c)) // [(0,3) (1,0)], [(0,3) (1,0) (2,2)]
@@ -330,36 +377,45 @@ func (qs *QueenStack) nextRow(anchor Cell) StackAction { // (3,3)
 	action = PopStack
 	return action
 }
-func (qs *QueenStack) pipe(anchor Cell, inAction StackAction, outAction chan StackAction, wg *sync.WaitGroup) {
-	wg.Add(1)
-	go func(anchor Cell, action StackAction) {
-		switch action {
-		case NextRow:
-			outAction <- qs.nextRow(anchor)
-		case PopStack:
-			outAction <- qs.popStack(anchor)
-		}
-		wg.Done()
-	}(anchor, inAction)
-	return
-}
+
 func (qs *QueenStack) traverseToAnchor(anchor Cell, solutions chan Solution, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() { // (3,0)
+		st := time.Now()
+		actions := make(chan StackAction, qs.size)
+		action := NextRow
+		gid := goroutines.Enter(fmt.Sprintf("%20s", "traverseToAnchor"))
 		defer func() {
+			dfr(1, s(" %s: Stop with %s after %s", anchor, action, time.Since(st)))
+			goroutines.Exit(gid)
 			wg.Done()
 		}()
-		nextAction := NextRow
-		next := make(chan StackAction, qs.size)
 		for {
-			qs.pipe(anchor, nextAction, next, wg)
-			nextAction = <-next
-			// dfr(1, s(" %s: %10s %s with result %2d long %s", anchor, "nextAction", nextAction, len(qs.pieces), solnsdisp.String()))
-			if nextAction == Traversed {
-				if anchor.RowIs(qs.size - 1) {
-					solutions <- Solution{anchor, qs.getPieces()}
+			select {
+			case action = <-actions:
+				switch action {
+				case NextRow:
+					actions <- qs.nextRow(anchor)
+				case PopStack:
+					actions <- qs.popStack(anchor)
+				case Traversed:
+					if anchor.RowIs(qs.size - 1) {
+						solutions <- Solution{anchor, qs.getPieces()}
+					}
+					return
 				}
-				return
+			default:
+				switch action {
+				case NextRow:
+					actions <- qs.nextRow(anchor)
+				case PopStack:
+					actions <- qs.popStack(anchor)
+				case Traversed:
+					if anchor.RowIs(qs.size - 1) {
+						solutions <- Solution{anchor, qs.getPieces()}
+					}
+					return
+				}
 			}
 		}
 	}()
@@ -367,8 +423,12 @@ func (qs *QueenStack) traverseToAnchor(anchor Cell, solutions chan Solution, wg 
 func (qs *QueenStack) processAnchor(anchor Cell, size int, solutions chan Solution, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
+		gid := goroutines.Enter(fmt.Sprintf("%20s", "processAnchor"))
+		defer func() {
+			goroutines.Exit(gid)
+			wg.Done()
+		}()
 		qs.traverseToAnchor(anchor, solutions, wg)
-		wg.Done()
 	}()
 	return
 }
@@ -511,12 +571,17 @@ func (q *QueenBoard) String() string {
 func (q *QueenBoard) startAnchorQueue(anchors chan<- Cell, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
+		gid := goroutines.Enter(fmt.Sprintf("%20s", "startAnchorQueue"))
+		defer func() {
+			goroutines.Exit(gid)
+			wg.Done()
+
+		}()
 		for row := 0; row < q.Size(); row++ {
 			for col := 0; col < q.Size(); col++ {
 				anchors <- Cell{row, col}
 			}
 		}
-		wg.Done()
 	}()
 }
 
@@ -531,32 +596,34 @@ func (q *QueenBoard) PlaceNQueens() []Positions {
 	}
 	noOfAnchors := q.Size() * q.Size()
 	wg := &sync.WaitGroup{}
-	// done := make(chan bool, 1)
+	done := make(chan bool, 1)
 	anchors := make(chan Cell, noOfAnchors)
 	solutions := make(chan Solution, q.Size())
 	solns := make([]Positions, 0)
+	solnsdisp.SetSize(q.Size())
 
 	q.startAnchorQueue(anchors, wg)
 	for row := 0; row < q.Size(); row++ {
 		for col := 0; col < q.Size(); col++ {
 			anchor := <-anchors
-			// dfr(1, s("     %s: PROCESSING Anchor %s", anchor, anchor))
+			dfr(1, s("     %s: PROCESSING Anchor %s", anchor, anchor))
 			q.queens[anchor.Col].processAnchor(anchor, q.Size(), solutions, wg)
 		}
 	}
-	// wg.Add(1)
+	wg.Add(1)
 	go func() {
-		// gid := goroutines.Enter(fmt.Sprintf("%20s", "PlaceNQueens"))
-		// defer func() {
-		// 	// goroutines.Exit(gid)
-		// 	wg.Done()
-		// }()
+		gid := goroutines.Enter(fmt.Sprintf("%20s", "PlaceNQueens"))
+		defer func() {
+			goroutines.Exit(gid)
+			wg.Done()
+		}()
 
 		noOfSolutions := 0
 		for {
 			select {
 			case solution := <-solutions:
 				noOfSolutions++
+				solnsdisp.SetSolution(solution.forAnchor.Col)
 				filler := s(s("%%%ds", q.Size()*2), " ")
 				length := s(s("%%%dd", digits), solution.Size())
 				if solution.Size() == q.Size() {
@@ -566,14 +633,15 @@ func (q *QueenBoard) PlaceNQueens() []Positions {
 					d(0, s(" %s Partial  for %s Col took %18s and is %s long %s", nth(noOfSolutions, digits), nth(solution.forAnchor.Col, digits), time.Since(st), length, filler))
 				}
 				if noOfSolutions == q.Size() {
-					return
+					done <- true
 				}
-				// case <-done:
-				// 	return
+			case <-done:
+				return
 			}
 		}
 	}()
 	wg.Wait()
+	goroutines.List()
 	p("Found", len(solns), fmt.Sprintf("solutions for Board %dx%d  in %s \n", q.Size(), q.Size(), time.Since(st)), solns)
 	return solns
 }
@@ -663,25 +731,26 @@ type SolutionDisplay struct {
 // SetSize function
 func (sd *SolutionDisplay) SetSize(size int) {
 	sd.lock.Lock()
+	defer sd.lock.Unlock()
 	digits = 0
 	for d := size; d >= 1; d = d / 10 {
 		digits++
 	}
 	sd.size = size
 	sd.digits = digits
-	sd.lock.Unlock()
 }
 
 // SetSolution function
 func (sd *SolutionDisplay) SetSolution(col int) {
 	sd.lock.Lock()
+	defer sd.lock.Unlock()
 	sd.solns[col] = true
-	sd.lock.Unlock()
 }
 
 // String function
 func (sd *SolutionDisplay) String() string {
 	sd.lock.Lock()
+	defer sd.lock.Unlock()
 	solnsdisplay := make([]string, 0)
 	for pos := 0; pos < sd.size; pos++ {
 		if sd.solns[pos] {
@@ -690,7 +759,6 @@ func (sd *SolutionDisplay) String() string {
 			solnsdisplay = append(solnsdisplay, s(s("%%%dd", sd.digits), pos))
 		}
 	}
-	sd.lock.Unlock()
 	return strings.Join(solnsdisplay, "")
 }
 
