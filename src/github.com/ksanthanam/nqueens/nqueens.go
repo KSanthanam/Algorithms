@@ -608,7 +608,9 @@ func (q *QueenBoard) PlaceNQueens() []Positions {
 		digits++
 	}
 	solnset.SetSize(q.Size())
-	logger(done)
+	if DEBUG {
+		logger(done)
+	}
 
 	noOfAnchors := q.Size() * q.Size()
 	anchors := make(chan Cell, noOfAnchors)

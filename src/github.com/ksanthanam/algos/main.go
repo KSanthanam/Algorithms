@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"runtime"
 
 	nqueens "github.com/ksanthanam/nqueens"
 )
@@ -13,7 +12,7 @@ import (
 // )
 
 func main() {
-	runtime.GOMAXPROCS(150)
+	// runtime.GOMAXPROCS(15)
 	// fmt.Println(runtime.GOMAXPROCS(-1))
 	debugPtr := flag.Bool("debug", false, "Debug true/false")
 	sizePtr := flag.Int("size", 10, "Debug true/false")
