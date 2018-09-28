@@ -173,6 +173,7 @@ type QueenStack struct {
 	pieces    []Piece
 	visited   map[Cell]bool
 	traversed map[int]bool
+	semaphore chan struct{}
 	processed bool
 }
 
@@ -411,8 +412,10 @@ func (qs *QueenStack) pipe(anchor Cell, inAction StackAction, outAction chan Sta
 }
 func (qs *QueenStack) traverseToAnchor(anchor Cell, solutions chan Solution) {
 	wg.Add(1)
+	qs.semaphore <- struct{}{}
 	go func() { // (3,0)
 		defer func() {
+			<-qs.semaphore
 			wg.Done()
 		}()
 		debug := func() {
@@ -453,7 +456,7 @@ func (qs *QueenStack) processAnchor(anchor Cell, size int, solutions chan Soluti
 
 // NewQueenStack function for QueenStack
 func NewQueenStack(size int) PieceStack {
-	return &QueenStack{sync.Mutex{}, size, make([]Piece, 0), make(map[Cell]bool, 0), make(map[int]bool, 0), false}
+	return &QueenStack{sync.Mutex{}, size, make([]Piece, 0), make(map[Cell]bool, 0), make(map[int]bool, 0), make(chan struct{}, 1), false}
 }
 
 /*
@@ -649,22 +652,14 @@ func (q *QueenBoard) PlaceNQueens() []Positions {
 			case solution := <-solutions:
 				noOfSolutions++
 				debug(solution, noOfSolutions)
-				// filler := s(s("%%%ds", q.Size()*2), " ")
-				// length := s(s("%%%dd", digits), solution.Size())
 				if solution.Size() == q.Size() {
-					// d(0, s(" %s Solution for %s Col took %18s and is %s long %s", nth(noOfSolutions, digits), nth(solution.forAnchor.Col, digits), time.Since(st), length, filler))
 					solns = append(solns, solution.positions)
-				} else {
-					// d(0, s(" %s Partial  for %s Col took %18s and is %s long %s", nth(noOfSolutions, digits), nth(solution.forAnchor.Col, digits), time.Since(st), length, filler))
 				}
 				solnset.SetSolution(solution.forAnchor.Col)
 				if noOfSolutions == q.Size() {
 					done <- true
-					// close(logs)
 					return
 				}
-				// case <-done:
-				// 	return
 			}
 		}
 	}()
