@@ -135,7 +135,7 @@ Following are the stages processAnchor goes through
 ### Solutions
 There are few solutions with inefficient timecomplexity. The worst being Q(N<sup>N</sup>)
 
-The solution implemented here is the most efficient possible in Golang using back propagation, channel and go routines.
+The solution implemented here is the most efficient possible in Scala using back propagation, and parallel List par.
 
 #### Synopsis of Algorithm
 
