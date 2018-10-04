@@ -1,0 +1,21 @@
+[0m[[0m[0minfo[0m] [0m[0mPackaging /Users/KK/ggit/github.com/ksanthanam/SCALA/nqueens/target/scala-2.12/nqueens_2.12-0.1.0-SNAPSHOT.jar ...[0m
+[0m[[0m[0mdebug[0m] [0m[0mInput file mappings:[0m
+[0m[[0m[0mdebug[0m] [0m[0m	com/algorithms/nqueens[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/KK/ggit/github.com/ksanthanam/SCALA/nqueens/target/scala-2.12/classes/com/algorithms/nqueens[0m
+[0m[[0m[0mdebug[0m] [0m[0m	com/algorithms/nqueens/Solution$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/KK/ggit/github.com/ksanthanam/SCALA/nqueens/target/scala-2.12/classes/com/algorithms/nqueens/Solution$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	com/algorithms/nqueens/Solution.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/KK/ggit/github.com/ksanthanam/SCALA/nqueens/target/scala-2.12/classes/com/algorithms/nqueens/Solution.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	com/algorithms/nqueens/Action$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/KK/ggit/github.com/ksanthanam/SCALA/nqueens/target/scala-2.12/classes/com/algorithms/nqueens/Action$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	com/algorithms/nqueens/NQueens$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/KK/ggit/github.com/ksanthanam/SCALA/nqueens/target/scala-2.12/classes/com/algorithms/nqueens/NQueens$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	com/algorithms/nqueens/Action.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/KK/ggit/github.com/ksanthanam/SCALA/nqueens/target/scala-2.12/classes/com/algorithms/nqueens/Action.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	com/algorithms[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/KK/ggit/github.com/ksanthanam/SCALA/nqueens/target/scala-2.12/classes/com/algorithms[0m
+[0m[[0m[0mdebug[0m] [0m[0m	com/algorithms/nqueens/NQueens.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/KK/ggit/github.com/ksanthanam/SCALA/nqueens/target/scala-2.12/classes/com/algorithms/nqueens/NQueens.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	com[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /Users/KK/ggit/github.com/ksanthanam/SCALA/nqueens/target/scala-2.12/classes/com[0m
+[0m[[0m[0minfo[0m] [0m[0mDone packaging.[0m

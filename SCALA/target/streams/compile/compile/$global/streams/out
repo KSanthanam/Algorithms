@@ -1,0 +1,6 @@
+[0m[[0m[31merror[0m] [0m[0m/Users/KK/ggit/github.com/ksanthanam/SCALA/src/main/scala/algorithms/Algorithms.scala:5:76: type mismatch;[0m
+[0m[[0m[31merror[0m] [0m[0m found   : List[List[(Int, Int)]][0m
+[0m[[0m[31merror[0m] [0m[0m required: List[List[Integer]][0m
+[0m[[0m[31merror[0m] [0m[0m    def getNQueens(N: Integer) : List[List[Integer]] = NQueens.GetSolutions(N)[0m
+[0m[[0m[31merror[0m] [0m[0m                                                                           ^[0m
+[0m[[0m[31merror[0m] [0m[0mone error found[0m
